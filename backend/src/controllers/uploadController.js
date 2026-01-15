@@ -141,7 +141,11 @@ async function uploadChunk(req, res) {
       });
     }
     
-    // already uploaded? skip it
+    const [chunks] = await connection.query(
+      `SELECT status FROM chunks WHERE upload_id = ? AND chunk_index = ?`,
+      [uploadId, chunkIndexNum]
+    );
+    
     if (chunks.length > 0 && chunks[0].status === 'SUCCESS') {
       console.log(`Chunk ${chunkIndexNum} already uploaded, skipping`);
       return res.json({
@@ -153,6 +157,7 @@ async function uploadChunk(req, res) {
     
     const offset = chunkIndexNum * CHUNK_SIZE;
     
+    const chunkStream = require('fs').createReadStream(chunkData.path);
     await fileUtils.writeChunkAtOffset(upload.file_path, offset, chunkStream);
     
     await fileUtils.safeDeleteFile(chunkData.path);
@@ -175,8 +180,6 @@ async function uploadChunk(req, res) {
     console.log(`Chunk ${chunkIndexNum} uploaded (${completed}/${total})`);
     
     if (isComplete) {
-      setTimeout(() => finalizeUpload(uploadId), 0);
-    }
       setTimeout(() => finalizeUpload(uploadId), 0);
     }
     
