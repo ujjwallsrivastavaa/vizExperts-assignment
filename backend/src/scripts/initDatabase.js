@@ -25,9 +25,19 @@ async function initDatabase() {
     
     console.log('✅ Connected to MySQL');
     
-    // Read and execute schema
+    // Create database if it doesn't exist
+    const dbName = process.env.DB_NAME || 'chunked_upload';
+    console.log(`📦 Creating database '${dbName}' if not exists...`);
+    await connection.query(`CREATE DATABASE IF NOT EXISTS ${dbName}`);
+    await connection.query(`USE ${dbName}`);
+    console.log(`✅ Using database '${dbName}'`);
+    
+    // Read and execute schema (skip USE statement)
     const schemaPath = path.join(__dirname, '../../schema.sql');
-    const schema = await fs.readFile(schemaPath, 'utf8');
+    let schema = await fs.readFile(schemaPath, 'utf8');
+    
+    // Remove the USE statement from schema since we already selected the database
+    schema = schema.replace(/USE\s+[^;]+;/gi, '');
     
     console.log('📝 Executing schema...');
     await connection.query(schema);

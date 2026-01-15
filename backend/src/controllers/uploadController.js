@@ -4,6 +4,7 @@ const db = require('../config/database');
 const fileUtils = require('../utils/fileUtils');
 const hashUtils = require('../utils/hashUtils');
 const zipUtils = require('../utils/zipUtils');
+const chunkHashUtils = require('../utils/chunkHashUtils');
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || './uploads';
 const CHUNK_SIZE = parseInt(process.env.CHUNK_SIZE) || 5242880;
@@ -100,7 +101,7 @@ async function initializeUpload(req, res) {
 }
 
 async function uploadChunk(req, res) {
-  const { uploadId, chunkIndex } = req.body;
+  const { uploadId, chunkIndex, chunkHash } = req.body;
   const chunkData = req.file;
   
   // Validation
@@ -116,6 +117,22 @@ async function uploadChunk(req, res) {
   
   try {
     connection = await db.getConnection();
+    
+    // Verify chunk hash if provided (integrity check)
+    if (chunkHash) {
+      const chunkBuffer = require('fs').readFileSync(chunkData.path);
+      const isValid = chunkHashUtils.verifyChunkHash(chunkBuffer, chunkHash);
+      
+      if (!isValid) {
+        await fileUtils.safeDeleteFile(chunkData.path);
+        return res.status(400).json({
+          error: 'Chunk hash verification failed',
+          chunkIndex: chunkIndexNum
+        });
+      }
+      
+      console.log(`✓ Chunk ${chunkIndexNum} hash verified`);
+    }
     
     // Fetch upload details
     const [uploads] = await connection.query(

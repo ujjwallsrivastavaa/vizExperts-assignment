@@ -130,7 +130,7 @@ function App() {
     <div className="app">
       <div className="container">
         <header className="header">
-          <h1>🚀 Chunked Upload System</h1>
+          <h1>Chunked Upload System</h1>
           <p className="subtitle">Upload large ZIP files with resumability & fault tolerance</p>
         </header>
         

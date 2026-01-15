@@ -74,12 +74,26 @@ async function initializeUpload(file, fileHash) {
 }
 
 /**
+ * Calculate SHA-256 hash of a chunk
+ */
+async function calculateChunkHash(chunkBlob) {
+  const arrayBuffer = await chunkBlob.arrayBuffer();
+  const hashBuffer = await window.crypto.subtle.digest('SHA-256', arrayBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+/**
  * Upload single chunk with retry logic
  */
 async function uploadChunk(uploadId, chunkIndex, chunkBlob, retryCount = 0) {
+  // Calculate chunk hash for integrity verification
+  const chunkHash = await calculateChunkHash(chunkBlob);
+  
   const formData = new FormData();
   formData.append('uploadId', uploadId);
   formData.append('chunkIndex', chunkIndex);
+  formData.append('chunkHash', chunkHash);
   formData.append('chunk', chunkBlob, `chunk_${chunkIndex}`);
   
   try {

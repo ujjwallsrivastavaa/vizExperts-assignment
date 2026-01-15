@@ -5,6 +5,7 @@ require('dotenv').config();
 
 const uploadRoutes = require('./routes/uploadRoutes');
 const cleanupService = require('./services/cleanupService');
+const recoveryService = require('./services/recoveryService');
 const fileUtils = require('./utils/fileUtils');
 
 const app = express();
@@ -60,6 +61,10 @@ async function startServer() {
     
     console.log('Directories initialized');
     
+    // Run crash recovery on startup
+    await recoveryService.performStartupRecovery();
+    
+    // Start cleanup service for abandoned uploads
     cleanupService.startCleanupService();
     
     app.listen(PORT, () => {
